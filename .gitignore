@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.python-version
+
+# Artifacts
+artifacts/
+*.egg-info/
+
+# Environment
+.env
+
+# Data
+data/raws/
+data/train/
+data/sft/*.csv
+data/sft/*.jsonl
+
+# Wandb
+wandb/
+
+# Logs
+*.log
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# UV
+.uv/
