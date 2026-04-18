@@ -23,6 +23,11 @@ STOP_MARKERS = [
     "Website:",
     "Web chat",
     "Messager",
+    "Để đặt lịch khám",
+    "Quý khách vui lòng liên hệ",
+    "Bệnh viện còn được trang bị",
+    "BVĐK Tâm Anh",
+    "Đây cũng là một trong những đơn vị tiên phong",
 ]
 
 DROP_LINE_PATTERNS = [
@@ -57,6 +62,11 @@ SKIP_EXACT = {
     "Tiêu hóa",
 }
 
+INLINE_CITATION_PATTERNS = [
+    r"\(\s*\d+\s*\)",
+    r"\[\s*\d+(?:\s*,\s*\d+)*\s*\]",
+]
+
 
 def normalize_text(text: str) -> str:
     return unicodedata.normalize("NFC", text or "")
@@ -67,6 +77,15 @@ def clean_spaces(text: str) -> str:
     text = text.replace("\xa0", " ")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def strip_inline_citations(text: str) -> str:
+    text = normalize_text(text)
+    for pattern in INLINE_CITATION_PATTERNS:
+        text = re.sub(pattern, "", text)
+    text = re.sub(r"\s+([,.;:?!])", r"\1", text)
+    text = re.sub(r" {2,}", " ", text)
     return text.strip()
 
 
@@ -99,21 +118,40 @@ def should_drop_line(text: str) -> bool:
     return False
 
 
-def remove_toc_block(paragraphs: list[str]) -> list[str]:
-    result = []
+def strip_bullet_prefix(text: str) -> str:
+    return clean_spaces(re.sub(r"^-\s*", "", text))
+
+
+def remove_leading_toc_block(paragraphs: list[str]) -> list[str]:
+    later_lookup = {clean_spaces(p).casefold() for p in paragraphs}
+
     i = 0
-    while i < len(paragraphs):
-        p = paragraphs[i]
-        if p.startswith("- "):
-            j = i
-            while j < len(paragraphs) and paragraphs[j].startswith("- "):
-                j += 1
-            if j - i >= 3:
-                i = j
-                continue
-        result.append(p)
-        i += 1
-    return result
+    while i < min(len(paragraphs), 12):
+        if not paragraphs[i].startswith("- "):
+            i += 1
+            continue
+
+        j = i
+        while j < len(paragraphs) and paragraphs[j].startswith("- "):
+            j += 1
+
+        run = paragraphs[i:j]
+        if len(run) < 3:
+            i = j
+            continue
+
+        repeated_headings = 0
+        for item in run:
+            candidate = strip_bullet_prefix(item)
+            if candidate and candidate.casefold() in later_lookup:
+                repeated_headings += 1
+
+        if repeated_headings >= 2:
+            return paragraphs[:i] + paragraphs[j:]
+
+        i = j
+
+    return paragraphs
 
 
 def clean_body_text(text: str) -> str:
@@ -130,9 +168,13 @@ def clean_body_text(text: str) -> str:
         if is_reference_paragraph(p):
             continue
 
+        p = strip_inline_citations(p)
+        if not p:
+            continue
+
         cleaned.append(p)
 
-    cleaned = remove_toc_block(cleaned)
+    cleaned = remove_leading_toc_block(cleaned)
 
     deduped = []
     seen = set()
@@ -146,17 +188,9 @@ def clean_body_text(text: str) -> str:
     return "\n\n".join(deduped).strip()
 
 
-def build_training_text(title: str, body_text: str) -> str:
-    title = clean_spaces(title)
+def build_training_text(_title: str, body_text: str) -> str:
     body_text = clean_spaces(body_text)
-
-    parts = []
-    if title:
-        parts.append(title)
-    if body_text:
-        parts.append(body_text)
-
-    return "\n\n".join(parts).strip()
+    return body_text
 
 
 def load_jsonl(path: Path) -> list[dict]:
