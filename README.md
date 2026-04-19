@@ -7,6 +7,9 @@ This repository implements a two-stage Vietnamese GPT-2 training pipeline:
 
 The project includes data collection, cleaning, tokenizer training, corpus deduplication, distributed Stage 1 training, and single-GPU Stage 2 domain adaptation.
 
+Website:
+![Website disease](./image:video/background.png)
+
 ## Project Scope
 
 The codebase currently supports:
