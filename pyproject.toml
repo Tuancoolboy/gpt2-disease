@@ -3,9 +3,9 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vietnamese-llm-pretraining"
+name = "vietnamese-training"
 version = "0.1.0"
-description = "Multi-stage Vietnamese GPT-2 pretraining from scratch and continued poem-domain pretraining"
+description = "Multi-stage Vietnamese GPT-2 pretraining from scratch and continued health pretraining"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
